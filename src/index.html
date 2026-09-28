@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    />
+    <title>KomikGen</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="brand"><span class="logo">K!</span> KomikGen</div>
+      <div class="group">
+        <button data-cmd="new" title="Yeni (Ctrl+N)">Yeni</button>
+        <button data-cmd="open" title="Aç (Ctrl+O)">Aç</button>
+        <button data-cmd="save" title="Kaydet (Ctrl+S)">Kaydet</button>
+      </div>
+      <div class="group">
+        <button data-cmd="undo" title="Geri al (Ctrl+Z)">↶</button>
+        <button data-cmd="redo" title="Yinele (Ctrl+Y)">↷</button>
+      </div>
+      <div class="group">
+        <button data-cmd="randomize" title="Seçili karaktere rastgele görünüm ver">🎲 Rastgele</button>
+      </div>
+      <div class="spacer"></div>
+      <div class="group">
+        <button data-cmd="zoomOut" title="Uzaklaştır">−</button>
+        <span id="zoomLabel">100%</span>
+        <button data-cmd="zoomIn" title="Yakınlaştır">+</button>
+        <button data-cmd="zoomFit" title="Ekrana sığdır">Sığdır</button>
+      </div>
+      <div class="group">
+        <button data-cmd="copyImage" title="Resmi panoya kopyala">Kopyala</button>
+        <button data-cmd="exportSvg">SVG</button>
+        <button data-cmd="exportPng" class="primary" title="PNG olarak kaydet (Ctrl+E)">PNG kaydet</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar left">
+        <nav class="tabs" id="leftTabs">
+          <button data-tab="karakter" class="active">Karakter</button>
+          <button data-tab="balon">Balon & Yazı</button>
+          <button data-tab="nesne">Nesne</button>
+        </nav>
+        <section class="tab-body" data-tab-body="karakter">
+          <p class="hint">Bir karaktere tıkla, seçili panele eklensin.</p>
+          <div class="grid chars" id="presetGrid"></div>
+          <button class="wide" data-cmd="addRandomChar">🎲 Rastgele karakter ekle</button>
+        </section>
+        <section class="tab-body hidden" data-tab-body="balon">
+          <h4>Konuşma balonları</h4>
+          <div class="grid bubbles" id="bubbleGrid"></div>
+          <h4>Efekt yazıları</h4>
+          <div class="grid effects" id="effectGrid"></div>
+        </section>
+        <section class="tab-body hidden" data-tab-body="nesne">
+          <h4>Nesneler</h4>
+          <div class="grid objects" id="objectGrid"></div>
+          <button class="wide" data-cmd="addImage">🖼️ Bilgisayardan resim ekle</button>
+        </section>
+      </aside>
+
+      <section class="workspace" id="workspace">
+        <div class="stage-wrap" id="stageWrap">
+          <svg id="stage" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </section>
+
+      <aside class="sidebar right" id="props"></aside>
+    </main>
+
+    <footer class="statusbar" id="status">Hazır</footer>
+    <div class="toast hidden" id="toast"></div>
+
+    <script src="characters.js"></script>
+    <script src="scene.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

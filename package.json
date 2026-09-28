@@ -1,0 +1,28 @@
+{
+  "name": "komikgen",
+  "productName": "KomikGen",
+  "version": "1.0.0",
+  "description": "Kendi çizgi romanını oluşturan masaüstü uygulaması",
+  "main": "main.js",
+  "author": "gachimuchi637",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.komikgen.app",
+    "productName": "KomikGen",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  },
+  "devDependencies": {
+    "electron": "^38.0.0"
+  }
+}
