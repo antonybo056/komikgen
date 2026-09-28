@@ -18,7 +18,9 @@
     openProject: async () => null,
     openImage: async () => null,
     exportFile: async () => null,
-    copyImage: async () => false
+    copyImage: async () => false,
+    loadCharacters: async () => [],
+    saveCharacters: async () => true
   };
 
   const stage = $('#stage');
@@ -353,7 +355,11 @@
       beard: !long && Math.random() < 0.3 ? pick(['biyik', 'sakal', 'kecisakal']) : 'yok',
       hat: Math.random() < 0.15 ? pick(['bere', 'kep', 'tac']) : 'yok',
       hatColor: pick(CLOTH_COLORS),
-      lashes: long
+      lashes: long,
+      bottom: long && Math.random() < 0.4 ? 'etek' : Math.random() < 0.2 ? 'sort' : 'pantolon',
+      eyeColor: pick(C.EYE_COLORS),
+      freckles: Math.random() < 0.2,
+      earrings: long && Math.random() < 0.4
     };
   }
 
@@ -699,6 +705,10 @@
 
   // ---------- Klavye ----------
   window.addEventListener('keydown', (e) => {
+    if (creator) {
+      if (e.key === 'Escape') closeCreator();
+      return;
+    }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
     if (e.key === 'Escape') {
       if (typing) document.activeElement.blur();
@@ -839,10 +849,15 @@
       h += `<div class="row">${F.select('item.look.hair', 'Saç modeli', C.HAIR_STYLES, l.hair)}${F.color('item.look.hairColor', 'Saç rengi', l.hairColor)}</div>`;
       h += `<div class="field">${F.swatches('hairColor', HAIR_COLORS, l.hairColor)}</div>`;
       h += `<div class="row">${F.select('item.look.top', 'Üst giyim', C.TOPS, l.top)}${F.color('item.look.topColor', 'Üst rengi', l.topColor)}</div>`;
-      h += `<div class="row">${F.color('item.look.bottomColor', 'Pantolon', l.bottomColor)}${F.color('item.look.shoeColor', 'Ayakkabı', l.shoeColor)}</div>`;
+      h += `<div class="row">${F.select('item.look.bottom', 'Alt giyim', C.BOTTOMS, l.bottom || 'pantolon')}${F.color('item.look.bottomColor', 'Alt rengi', l.bottomColor)}</div>`;
+      h += `<div class="row">${F.color('item.look.shoeColor', 'Ayakkabı', l.shoeColor)}<div></div></div>`;
+      h += `<div class="field"><label>Göz rengi</label>${F.swatches('eyeColor', C.EYE_COLORS, l.eyeColor || '#1d1d1f')}</div>`;
       h += `<div class="row">${F.select('item.look.glasses', 'Gözlük', C.GLASSES, l.glasses)}${F.select('item.look.beard', 'Sakal', C.BEARDS, l.beard)}</div>`;
       h += `<div class="row">${F.select('item.look.hat', 'Şapka', C.HATS, l.hat)}${F.color('item.look.hatColor', 'Şapka rengi', l.hatColor)}</div>`;
-      h += F.check('item.look.lashes', 'Kirpik', l.lashes);
+      h += `<div class="row">${F.check('item.look.lashes', 'Kirpik', l.lashes)}${F.check('item.look.freckles', 'Çil', l.freckles)}</div>`;
+      h += F.check('item.look.earrings', 'Küpe', l.earrings);
+      h += `<button class="wide" data-cmd="openItemCreator">✏️ Karakter oluşturucuda aç</button>`;
+      h += `<button class="wide" data-cmd="saveItemAsMine">⭐ Karakterlerime kaydet</button>`;
       h += `<button class="wide" data-cmd="randomize">🎲 Rastgele görünüm</button>`;
     } else {
       h += F.range('item.scale', 'Boyut', 0.2, 3, 0.01, it.scale, '×');
@@ -926,6 +941,14 @@
   });
 
   document.addEventListener('click', (e) => {
+    const editEl = e.target.closest('[data-custom-edit]');
+    if (editEl) {
+      const c = customChars.find((x) => x.id === editEl.dataset.customEdit);
+      if (c) openCreator({ mode: 'edit', id: c.id, name: c.ad, look: c.look });
+      return;
+    }
+    const delEl = e.target.closest('[data-custom-del]');
+    if (delEl) return deleteCustom(delEl.dataset.customDel);
     const cmdEl = e.target.closest('[data-cmd]');
     if (cmdEl) return runCmd(cmdEl.dataset.cmd);
     const actEl = e.target.closest('[data-act]');
@@ -934,6 +957,7 @@
     if (addEl) {
       const v = addEl.dataset.val;
       if (addEl.dataset.add === 'char') addCharacter(v);
+      if (addEl.dataset.add === 'custom') addCustomCharacter(v);
       if (addEl.dataset.add === 'bubble') addBubble(v);
       if (addEl.dataset.add === 'effect') addEffect(+v);
       if (addEl.dataset.add === 'object') addObject(v);
@@ -966,8 +990,9 @@
         it.look.skin = val;
         break;
       case 'hairColor':
+      case 'eyeColor':
         if (!it) return;
-        it.look.hairColor = val;
+        it.look[act] = val;
         break;
       case 'lookPreset': {
         const p = C.PRESETS.find((x) => x.id === val);
@@ -1175,6 +1200,21 @@
         return addRandomCharacter();
       case 'addImage':
         return addImage();
+      case 'newCustom':
+        return openCreator({ mode: 'new', name: '', look: DEFAULT_LOOK });
+      case 'openItemCreator': {
+        const f = selectedItem();
+        if (f && f.item.type === 'character') openCreator({ mode: 'item', itemId: f.item.id, name: f.item.name || '', look: f.item.look, emotion: f.item.emotion, pose: f.item.pose });
+        return;
+      }
+      case 'saveItemAsMine': {
+        const f = selectedItem();
+        if (!f || f.item.type !== 'character') return;
+        const name = f.item.name || 'Karakterim';
+        customChars.push({ id: 'c' + uid(), ad: name, look: { ...f.item.look } });
+        persistCustom().then(() => toast(`"${name}" karakterlerine kaydedildi`));
+        return;
+      }
       case 'randomize': {
         const f = selectedItem();
         if (!f || f.item.type !== 'character') return toast('Önce bir karakter seç');
@@ -1235,11 +1275,216 @@
     return st;
   }
 
+  // ---------- Karakter oluşturucu ----------
+  const DEFAULT_LOOK = {
+    skin: '#f1c7a0',
+    hair: 'kisa',
+    hairColor: '#4a3526',
+    eyeColor: '#1d1d1f',
+    top: 'tisort',
+    topColor: '#118ab2',
+    bottom: 'pantolon',
+    bottomColor: '#3d5a80',
+    shoeColor: '#1b1b1b',
+    glasses: 'yok',
+    beard: 'yok',
+    hat: 'yok',
+    hatColor: '#e63946',
+    lashes: false,
+    freckles: false,
+    earrings: false
+  };
+  const creatorEl = $('#creator');
+  let customChars = [];
+  let creator = null; // { mode: 'new'|'edit'|'item', id, itemId, name, look, emotion, pose }
+
+  const fullLook = (look) => ({ ...DEFAULT_LOOK, ...look });
+
+  function buildMyGrid() {
+    let h = `<div class="tile new-char" data-cmd="newCustom"><span class="plus">+</span>Yeni karakter oluştur</div>`;
+    for (const c of customChars) {
+      h += `<div class="tile custom" data-add="custom" data-val="${c.id}" title="${esc(c.ad)}">
+        <button class="mini edit" data-custom-edit="${c.id}" title="Düzenle">✎</button>
+        <button class="mini del" data-custom-del="${c.id}" title="Sil">✕</button>
+        ${svgThumb('10 0 180 240', C.render(fullLook(c.look), { emotion: 'gulumseme', pose: 'normal' }))}${esc(c.ad)}</div>`;
+    }
+    $('#myGrid').innerHTML = h;
+  }
+
+  async function persistCustom() {
+    await native.saveCharacters(customChars);
+    buildMyGrid();
+  }
+
+  async function deleteCustom(id) {
+    const c = customChars.find((x) => x.id === id);
+    if (!c || !(await native.confirm(`"${c.ad}" karakterlerinden silinsin mi? (Sahnedeki kopyalar kalır.)`))) return;
+    customChars = customChars.filter((x) => x.id !== id);
+    await persistCustom();
+  }
+
+  function addCustomCharacter(id) {
+    const c = customChars.find((x) => x.id === id);
+    if (!c) return;
+    const panel = targetPanel();
+    addItem(panel, newCharacter(fullLook(c.look), c.ad, panelRect(panel.id), panel));
+  }
+
+  function openCreator(opts) {
+    creator = { emotion: 'gulumseme', pose: 'normal', ...opts, look: fullLook(opts.look || DEFAULT_LOOK) };
+    $('#creatorTitle').textContent = { new: 'Yeni karakter oluştur', edit: 'Karakteri düzenle', item: 'Sahnedeki karakteri düzenle' }[creator.mode];
+    $('#creatorFoot').innerHTML =
+      creator.mode === 'item'
+        ? `<button data-creator="close">İptal</button><button data-creator="saveMine">⭐ Karakterlerime de kaydet</button><button class="primary" data-creator="apply">Uygula</button>`
+        : `<button data-creator="close">İptal</button><button data-creator="save">Kaydet</button><button class="primary" data-creator="saveAdd">Kaydet ve panele ekle</button>`;
+    const opt = (obj, val) => Object.entries(obj).map(([k, v]) => `<option value="${k}"${k === val ? ' selected' : ''}>${esc(v.ad || v)}</option>`).join('');
+    $('#creatorEmotion').innerHTML = opt(C.EMOTIONS, creator.emotion);
+    $('#creatorPose').innerHTML = opt(C.POSES, creator.pose);
+    renderCreatorForm();
+    renderCreatorPreview();
+    creatorEl.classList.remove('hidden');
+    $('#creatorForm [data-cbind="name"]').focus();
+  }
+
+  function closeCreator() {
+    creator = null;
+    creatorEl.classList.add('hidden');
+  }
+
+  function renderCreatorPreview() {
+    $('#creatorPreview').innerHTML =
+      `<ellipse cx="100" cy="398" rx="70" ry="8" fill="#000" opacity="0.12"/>` +
+      C.render(creator.look, { emotion: creator.emotion, pose: creator.pose, boardText: creator.name || 'Merhaba!' });
+  }
+
+  function renderCreatorForm() {
+    const l = creator.look;
+    const colorLine = (key, colors) =>
+      `<div class="colorline"><div class="swatches">${colors
+        .map((c) => `<button class="swatch${c === l[key] ? ' active' : ''}" style="background:${c}" data-cset="${key}" data-val="${c}" title="${c}"></button>`)
+        .join('')}</div><input type="color" data-cbind="${key}" value="${l[key]}" title="Özel renk"></div>`;
+    const select = (key, label, options, disabled) =>
+      `<div class="field"><label>${label}</label><select data-cbind="${key}"${disabled ? ' disabled' : ''}>${Object.entries(options)
+        .map(([k, v]) => `<option value="${k}"${k === l[key] ? ' selected' : ''}>${esc(v)}</option>`)
+        .join('')}</select></div>`;
+    const check = (key, label) => `<label class="check"><input type="checkbox" data-cbind="${key}"${l[key] ? ' checked' : ''}> ${label}</label>`;
+    const tiles = (key, options, viewBox, lookFor) =>
+      Object.entries(options)
+        .map(
+          ([k, v]) =>
+            `<div class="tile${l[key] === k ? ' active' : ''}" data-cset="${key}" data-val="${k}">${svgThumb(viewBox, C.render(lookFor(k), { emotion: 'gulumseme' }))}${esc(v)}</div>`
+        )
+        .join('');
+
+    $('#creatorForm').innerHTML = `
+      <div class="field"><label>Karakterin adı</label><input type="text" data-cbind="name" value="${esc(creator.name || '')}" placeholder="Örn. Benim karakterim" maxlength="40"></div>
+      <h4>Ten rengi</h4>${colorLine('skin', C.SKINS)}
+      <h4>Saç modeli</h4><div class="grid hair">${tiles('hair', C.HAIR_STYLES, '28 2 144 150', (k) => ({ ...l, hair: k, hat: 'yok' }))}</div>
+      <h4>Saç rengi</h4>${colorLine('hairColor', HAIR_COLORS)}
+      <h4>Göz rengi</h4>${colorLine('eyeColor', C.EYE_COLORS)}
+      <h4>Üst giyim</h4><div class="grid tops">${tiles('top', C.TOPS, '10 118 180 180', (k) => ({ ...l, top: k }))}</div>
+      <h4>Üst rengi</h4>${colorLine('topColor', CLOTH_COLORS)}
+      <h4>Alt giyim ve ayakkabı</h4>
+      <div class="row3">
+        ${select('bottom', l.top === 'elbise' ? 'Alt giyim (elbisede yok)' : 'Alt giyim', C.BOTTOMS, l.top === 'elbise')}
+        <div class="field"><label>Alt rengi</label><input type="color" data-cbind="bottomColor" value="${l.bottomColor}"></div>
+        <div class="field"><label>Ayakkabı</label><input type="color" data-cbind="shoeColor" value="${l.shoeColor}"></div>
+      </div>
+      <h4>Aksesuarlar</h4>
+      <div class="row3">${select('glasses', 'Gözlük', C.GLASSES)}${select('beard', 'Sakal / bıyık', C.BEARDS)}${select('hat', 'Şapka', C.HATS)}</div>
+      ${l.hat !== 'yok' && l.hat !== 'tac' ? `<div class="field"><label>Şapka rengi</label>${colorLine('hatColor', CLOTH_COLORS)}</div>` : ''}
+      <div class="row3">${check('lashes', 'Kirpik')}${check('freckles', 'Çil')}${check('earrings', 'Küpe')}</div>`;
+  }
+
+  function creatorSet(el) {
+    const key = el.dataset.cbind;
+    const v = el.type === 'checkbox' ? el.checked : el.value;
+    if (key === 'name') creator.name = v;
+    else creator.look[key] = v;
+  }
+
+  creatorEl.addEventListener('input', (e) => {
+    if (!creator || !e.target.dataset.cbind) return;
+    creatorSet(e.target);
+    renderCreatorPreview();
+  });
+
+  creatorEl.addEventListener('change', (e) => {
+    if (!creator) return;
+    const el = e.target;
+    if (el.id === 'creatorEmotion') creator.emotion = el.value;
+    else if (el.id === 'creatorPose') creator.pose = el.value;
+    else if (el.dataset.cbind) {
+      creatorSet(el);
+      if (el.dataset.cbind !== 'name') renderCreatorForm();
+    }
+    renderCreatorPreview();
+  });
+
+  creatorEl.addEventListener('click', async (e) => {
+    if (!creator) return;
+    if (e.target === creatorEl) return closeCreator();
+    const setEl = e.target.closest('[data-cset]');
+    if (setEl) {
+      creator.look[setEl.dataset.cset] = setEl.dataset.val;
+      renderCreatorForm();
+      renderCreatorPreview();
+      return;
+    }
+    const actEl = e.target.closest('[data-creator]');
+    if (!actEl) return;
+    const act = actEl.dataset.creator;
+    const name = (creator.name || '').trim() || 'Karakterim';
+    const look = { ...creator.look };
+    if (act === 'close') return closeCreator();
+    if (act === 'random') {
+      creator.look = fullLook(randomLook());
+      renderCreatorForm();
+      renderCreatorPreview();
+      return;
+    }
+    if (act === 'apply' || act === 'saveMine') {
+      const f = findItem(creator.itemId);
+      if (f) {
+        f.item.look = look;
+        f.item.name = name;
+        commit();
+        render();
+        renderProps();
+      }
+      if (act === 'saveMine') {
+        customChars.push({ id: 'c' + uid(), ad: name, look });
+        await persistCustom();
+        toast(`"${name}" karakterlerine kaydedildi`);
+      }
+      return closeCreator();
+    }
+    if (act === 'save' || act === 'saveAdd') {
+      const existing = creator.mode === 'edit' && customChars.find((x) => x.id === creator.id);
+      if (existing) {
+        existing.ad = name;
+        existing.look = look;
+      } else customChars.push({ id: 'c' + uid(), ad: name, look });
+      await persistCustom();
+      closeCreator();
+      if (act === 'saveAdd') {
+        const panel = targetPanel();
+        addItem(panel, newCharacter(look, name, panelRect(panel.id), panel));
+      }
+      toast(`"${name}" karakterlerine kaydedildi`);
+    }
+  });
+
   // ---------- Başlat ----------
   state = demoState();
   resetHistory();
   setDirty(false);
   buildLibrary();
+  buildMyGrid();
+  native.loadCharacters().then((list) => {
+    customChars = Array.isArray(list) ? list : [];
+    buildMyGrid();
+  });
   render();
   renderProps();
   updateStatus();
@@ -1248,5 +1493,5 @@
     if (!drag) render();
   });
   // Geliştirici konsolundan erişim için
-  window.KomikGen = { exportSvgString, rasterize, select, getState: () => state };
+  window.KomikGen = { exportSvgString, rasterize, select, getState: () => state, openCreator };
 })();

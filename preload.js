@@ -8,5 +8,7 @@ contextBridge.exposeInMainWorld('native', {
   openProject: () => ipcRenderer.invoke('open-project'),
   openImage: () => ipcRenderer.invoke('open-image'),
   exportFile: (opts) => ipcRenderer.invoke('export-file', opts),
-  copyImage: (dataUrl) => ipcRenderer.invoke('copy-image', dataUrl)
+  copyImage: (dataUrl) => ipcRenderer.invoke('copy-image', dataUrl),
+  loadCharacters: () => ipcRenderer.invoke('load-characters'),
+  saveCharacters: (list) => ipcRenderer.invoke('save-characters', list)
 });

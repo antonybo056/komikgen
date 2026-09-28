@@ -47,6 +47,9 @@
         </nav>
         <section class="tab-body" data-tab-body="karakter">
           <p class="hint">Bir karaktere tıkla, seçili panele eklensin.</p>
+          <h4>Karakterlerim</h4>
+          <div class="grid chars" id="myGrid"></div>
+          <h4>Hazır karakterler</h4>
           <div class="grid chars" id="presetGrid"></div>
           <button class="wide" data-cmd="addRandomChar">🎲 Rastgele karakter ekle</button>
         </section>
@@ -74,6 +77,27 @@
 
     <footer class="statusbar" id="status">Hazır</footer>
     <div class="toast hidden" id="toast"></div>
+
+    <div class="modal hidden" id="creator">
+      <div class="modal-card">
+        <header class="modal-head">
+          <h3 id="creatorTitle">Karakter oluştur</h3>
+          <button data-creator="close" title="Kapat (Esc)">✕</button>
+        </header>
+        <div class="creator-body">
+          <div class="creator-preview">
+            <svg id="creatorPreview" viewBox="-20 0 240 410" xmlns="http://www.w3.org/2000/svg"></svg>
+            <div class="row">
+              <div class="field"><label>Önizleme ifadesi</label><select id="creatorEmotion"></select></div>
+              <div class="field"><label>Önizleme pozu</label><select id="creatorPose"></select></div>
+            </div>
+            <button class="wide" data-creator="random">🎲 Rastgele görünüm</button>
+          </div>
+          <div class="creator-form" id="creatorForm"></div>
+        </div>
+        <footer class="modal-foot" id="creatorFoot"></footer>
+      </div>
+    </div>
 
     <script src="characters.js"></script>
     <script src="scene.js"></script>

@@ -4,12 +4,25 @@
 
 ![Uygulama ekranı](docs/ekran.png)
 
+Karakter oluşturucu:
+
+![Karakter oluşturucu](docs/olusturucu.png)
+
 Örnek çıktı:
 
 ![Örnek komik](docs/ornek-komik.png)
 
+## Hızlı başlangıç
+
+**En kolayı:** [Releases](https://github.com/antonybo056/komikgen/releases/latest) sayfasından `KomikGen-1.0.0-portable.exe` dosyasını indir ve çift tıkla. Kurulum gerekmez.
+
+> Windows SmartScreen "tanınmayan uygulama" uyarısı verirse **Ek bilgi → Yine de çalıştır**'a tıkla (dosya imzasız olduğu için).
+
+**Kaynak koddan:** Bilgisayarında [Node.js](https://nodejs.org) varsa proje klasöründeki **`Baslat.bat`** dosyasına çift tıkla. İlk açılışta gerekli dosyaları kendisi indirir.
+
 ## Özellikler
 
+- **Karakter oluşturucu**: kendi karakterini canlı önizlemeyle tasarla; ten, saç modeli/rengi, göz rengi, kıyafet, alt giyim (pantolon/şort/etek), gözlük, sakal, şapka, çil, küpe. Kaydettiğin karakterler **Karakterlerim** bölümünde kalıcı olarak durur.
 - **10 hazır karakter** + rastgele karakter üretici
 - **25 duygu/ifade**: mutlu, kahkaha, üzgün, ağlama, kızgın, şaşkın, şoke, aşık, hayran, uykulu…
 - **19 poz**: el sallama, işaret etme, eller belde, kollar bağlı, düşünme, kahve içme, telefon, kitap, pano tutma, koşma…
@@ -25,7 +38,7 @@
 - **Dışa aktarma**: PNG (2x), JPG, SVG, panoya kopyalama
 - Projeyi `.komik` dosyası olarak kaydetme/açma
 
-## Çalıştırma
+## Geliştirici olarak çalıştırma
 
 ```bash
 npm install
@@ -33,12 +46,12 @@ npm start
 ```
 
 > npm 11 kurulum betiklerini engellerse Electron ikili dosyası inmez. O zaman bir kez
-> `node node_modules/electron/install.js` komutunu çalıştırın.
+> `node node_modules/electron/install.js` komutunu çalıştırın. O da açamazsa (Node 24+ ile
+> görülen extract-zip sorunu) `powershell -File scripts/electron-onar.ps1` zip'i elle açar.
 
 ## Tek dosyalık .exe oluşturma
 
 ```bash
-npm install --save-dev electron-builder
 npm run dist
 ```
 

@@ -37,6 +37,8 @@
   const GLASSES = { yok: 'Yok', yuvarlak: 'Yuvarlak', kare: 'Köşeli', gunes: 'Güneş gözlüğü' };
   const BEARDS = { yok: 'Yok', biyik: 'Bıyık', sakal: 'Sakal', kecisakal: 'Keçi sakalı' };
   const HATS = { yok: 'Yok', bere: 'Bere', kep: 'Kep', tac: 'Taç' };
+  const BOTTOMS = { pantolon: 'Pantolon', sort: 'Şort', etek: 'Etek' };
+  const EYE_COLORS = ['#1d1d1f', '#5b3a1e', '#2e7d32', '#1e6fb8', '#7a8a99', '#8e44ad'];
   const LEGS = { ayakta: 'Ayakta', yurume: 'Yürüme', kosma: 'Koşma', ziplama: 'Zıplama' };
   const GAZES = {
     oto: 'Duyguya göre',
@@ -223,7 +225,7 @@
     }
   }
 
-  function eye(cx, cy, type, side, gz, skin, lashes) {
+  function eye(cx, cy, type, side, gz, skin, lashes, iris = OUT) {
     const st = `stroke="${OUT}" stroke-width="3" fill="none" stroke-linecap="round"`;
     const lash = lashes
       ? side === 'L'
@@ -232,7 +234,7 @@
       : '';
     const openEye = (rx, ry, pr, off) =>
       `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#fff" stroke="${OUT}" stroke-width="2.5"/>` +
-      `<circle cx="${cx + off[0]}" cy="${cy + off[1]}" r="${pr}" fill="${OUT}"/>` +
+      `<circle cx="${cx + off[0]}" cy="${cy + off[1]}" r="${pr}" fill="${iris}"/>` +
       `<circle cx="${cx + off[0] + 1.5}" cy="${cy + off[1] - 1.5}" r="1.4" fill="#fff"/>`;
     switch (type) {
       case 'wide':
@@ -265,7 +267,7 @@
       case 'roll':
         return openEye(8, 10, 4.5, [0, -5.5]) + lash;
       case 'wink':
-        return side === 'R' ? eye(cx, cy, 'happy', side, gz, skin, lashes) : openEye(8, 10, 4.5, gz) + lash;
+        return side === 'R' ? eye(cx, cy, 'happy', side, gz, skin, lashes, iris) : openEye(8, 10, 4.5, gz) + lash;
       default:
         return openEye(8, 10, 4.5, gz) + lash;
     }
@@ -545,29 +547,35 @@
     let s = hairBack(c);
 
     // Bacaklar ve ayakkabılar
-    const dress = c.top === 'elbise';
-    const legColor = dress ? c.skin : c.bottomColor;
-    const legW = dress ? 13 : 20;
+    const bottom = c.top === 'elbise' ? 'elbise' : c.bottom || 'pantolon';
+    const bareLegs = bottom !== 'pantolon';
     for (const side of ['L', 'R']) {
       const pts = legs[side];
-      s += limb(pts, legColor, legW);
+      s += limb(pts, bareLegs ? c.skin : c.bottomColor, bareLegs ? 13 : 20);
+      if (bottom === 'sort') {
+        const [hip, knee] = pts;
+        s += limb([hip, [hip[0] + (knee[0] - hip[0]) * 0.7, hip[1] + (knee[1] - hip[1]) * 0.7]], c.bottomColor, 23);
+      }
     }
     for (const side of ['L', 'R']) {
       const foot = legs[side][2];
       const dx = side === 'L' ? -5 : 5;
       s += `<ellipse cx="${foot[0] + dx}" cy="${foot[1] + 6}" rx="15" ry="8" fill="${c.shoeColor}" ${f}/>`;
     }
-    if (!dress) s += `<path d="M65,256 L135,256 L137,292 L63,292 Z" fill="${c.bottomColor}" ${f}/>`;
-    s += `<path d="M65,262 L135,262" stroke="${shade(c.bottomColor, -0.35)}" stroke-width="5"/>`;
+    if (bottom === 'pantolon' || bottom === 'sort') s += `<path d="M65,256 L135,256 L137,292 L63,292 Z" fill="${c.bottomColor}" ${f}/>`;
+    if (bottom === 'etek') s += `<path d="M66,250 L134,250 L150,320 Q100,330 50,320 Z" fill="${c.bottomColor}" ${f}/>`;
 
     s += torso(c);
 
     // Baş
     s += `<circle cx="57" cy="92" r="9" fill="${c.skin}" ${f}/><circle cx="143" cy="92" r="9" fill="${c.skin}" ${f}/>`;
     s += `<ellipse cx="100" cy="85" rx="44" ry="50" fill="${c.skin}" ${f}/>`;
+    if (c.earrings) s += `<circle cx="55" cy="106" r="5" fill="#ffc93c" ${f}/><circle cx="145" cy="106" r="5" fill="#ffc93c" ${f}/>`;
     if (c.beard === 'sakal') s += beard(c);
-    s += eye(82, 87, emo.eyes, 'L', gz, c.skin, c.lashes);
-    s += eye(118, 87, emo.eyes, 'R', gz, c.skin, c.lashes);
+    s += eye(82, 87, emo.eyes, 'L', gz, c.skin, c.lashes, c.eyeColor || OUT);
+    s += eye(118, 87, emo.eyes, 'R', gz, c.skin, c.lashes, c.eyeColor || OUT);
+    if (c.freckles)
+      s += [[68, 101], [74, 105], [64, 106], [132, 101], [126, 105], [136, 106]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.7" fill="${shade(c.skin, -0.4)}"/>`).join('');
     const brows = BROWS[emo.brows] || BROWS.normal;
     const browColor = c.hair === 'kel' ? shade(c.hairColor, -0.4) : shade(c.hairColor, -0.15);
     s += `<path d="${brows[0]}" fill="none" stroke="${browColor}" stroke-width="4" stroke-linecap="round"/><path d="${brows[1]}" fill="none" stroke="${browColor}" stroke-width="4" stroke-linecap="round"/>`;
@@ -603,6 +611,8 @@
     LEGS,
     GAZES,
     SKINS,
+    BOTTOMS,
+    EYE_COLORS,
     WIDTH: 200,
     HEIGHT: 400
   };

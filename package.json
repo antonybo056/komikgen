@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Kendi çizgi romanını oluşturan masaüstü uygulaması",
   "main": "main.js",
-  "author": "gachimuchi637",
+  "author": "antonybo056",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -13,16 +13,25 @@
   "build": {
     "appId": "com.komikgen.app",
     "productName": "KomikGen",
+    "directories": {
+      "output": "dist"
+    },
     "files": [
       "main.js",
       "preload.js",
-      "src/**/*"
+      "src/**/*",
+      "build/icon.png"
     ],
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "icon": "build/icon.png"
+    },
+    "portable": {
+      "artifactName": "KomikGen-${version}-portable.exe"
     }
   },
   "devDependencies": {
-    "electron": "^38.0.0"
+    "electron": "^38.0.0",
+    "electron-builder": "^26.15.3"
   }
 }

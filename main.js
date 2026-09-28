@@ -80,6 +80,7 @@ function createWindow() {
     minHeight: 640,
     title: 'KomikGen',
     backgroundColor: '#1e1f24',
+    icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -174,6 +175,23 @@ ipcMain.handle('export-file', async (_e, { data, ext, encoding }) => {
     fs.writeFileSync(r.filePath, data, 'utf8');
   }
   return r.filePath;
+});
+
+// Kullanıcının kendi karakterleri uygulama veri klasöründe saklanır
+const charactersFile = () => path.join(app.getPath('userData'), 'karakterlerim.json');
+
+ipcMain.handle('load-characters', () => {
+  try {
+    return JSON.parse(fs.readFileSync(charactersFile(), 'utf8'));
+  } catch {
+    return [];
+  }
+});
+
+ipcMain.handle('save-characters', (_e, list) => {
+  fs.mkdirSync(path.dirname(charactersFile()), { recursive: true });
+  fs.writeFileSync(charactersFile(), JSON.stringify(list, null, 1), 'utf8');
+  return true;
 });
 
 ipcMain.handle('copy-image', (_e, dataUrl) => {
